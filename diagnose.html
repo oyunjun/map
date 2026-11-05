@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>部署自检 · 我们的地图</title>
+<style>
+  :root { --pink:#FF9DC0; --pink-deep:#E8487D; --ink:#121212; --cream:#FFF6F0; --ok:#16a34a; --bad:#d92d4c; --warn:#b98900; }
+  * { box-sizing: border-box; }
+  body {
+    margin:0; padding:22px 14px 60px; background:var(--pink); color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  }
+  .wrap { max-width:720px; margin:0 auto; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .sub { font-size:12px; color:#444; margin-bottom:18px; }
+  .card {
+    background:#fff; border:3px solid var(--ink); border-radius:14px;
+    box-shadow:6px 6px 0 var(--ink); padding:16px 16px; margin-bottom:16px;
+  }
+  .row { display:flex; gap:10px; padding:10px 0; border-bottom:1px dashed #e3e3e3; align-items:flex-start; }
+  .row:last-child { border-bottom:0; }
+  .ico { font-size:16px; width:22px; flex:none; line-height:1.5; }
+  .body { flex:1; min-width:0; }
+  .name { font-size:14px; font-weight:700; }
+  .detail { font-size:12px; color:#555; line-height:1.75; margin-top:3px; word-break:break-all; }
+  .detail code { background:#f4f4f4; padding:1px 4px; border-radius:4px; font-size:11px; }
+  .tag { font-size:11px; font-weight:700; padding:1px 7px; border-radius:999px; border:1.5px solid currentColor; }
+  .ok { color:var(--ok); } .bad { color:var(--bad); } .warn { color:var(--warn); } .run { color:#666; }
+  .kv { font-family:ui-monospace,Consolas,monospace; font-size:11px; color:#444; }
+  a.back {
+    display:inline-block; margin-top:8px; padding:10px 18px; background:var(--pink-deep); color:#fff;
+    text-decoration:none; border:2px solid var(--ink); border-radius:999px;
+    box-shadow:3px 3px 0 var(--ink); font-weight:700; font-size:14px;
+  }
+  .advice { font-size:13px; line-height:1.85; }
+  .advice b { color:var(--bad); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🩺 部署自检</h1>
+  <div class="sub">部署到 GitHub Pages 后打开这一页，快速判断「能不能正常登录」。</div>
+
+  <div class="card" id="env"></div>
+  <div class="card" id="tests"></div>
+  <div class="card advice" id="advice"></div>
+
+  <a class="back" href="index.html">← 返回我们的地图</a>
+</div>
+
+<script src="js/cloud-config.js"></script>
+<script src="js/config.js"></script>
+<script>
+(function () {
+  var ENDPOINT = ((window.PUBLIC_CONFIG && window.PUBLIC_CONFIG.endpoint) || '').replace(/\/+$/, '');
+  var HOST = location.host;
+  var ORIGIN = location.origin;
+
+  function el(tag, cls, html) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (html != null) e.innerHTML = html;
+    return e;
+  }
+
+  /* ---------- 环境信息 ---------- */
+  var env = document.getElementById('env');
+  env.appendChild(el('div', 'name', '环境'));
+  [['当前来源', ORIGIN || HOST],
+   ['云后端 endpoint', ENDPOINT || '（未配置）'],
+   ['地图 Key', (window.APP_MAP_KEY || '').slice(0, 8) + '…'],
+   ['页面路径', location.pathname]
+  ].forEach(function (p) {
+    var r = el('div', 'row');
+    r.appendChild(el('div', 'body',
+      '<div class="kv">' + esc(p[0]) + ': ' + esc(p[1]) + '</div>'));
+    env.appendChild(r);
+  });
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  var box = document.getElementById('tests');
+  var results = {};
+
+  function addTest(id, name) {
+    var r = el('div', 'row');
+    var ico = el('div', 'ico run', '⏳');
+    var body = el('div', 'body');
+    body.appendChild(el('div', 'name', name));
+    var detail = el('div', 'detail', '检测中…');
+    body.appendChild(detail);
+    r.appendChild(ico); r.appendChild(body);
+    box.appendChild(r);
+    results[id] = { ico: ico, detail: detail };
+    return function (state, text) {
+      var map = { ok: ['✓', 'ok'], bad: ['✗', 'bad'], warn: ['!', 'warn'], run: ['⏳', 'run'] };
+      var m = map[state] || map.run;
+      ico.textContent = m[0];
+      ico.className = 'ico ' + m[1];
+      detail.innerHTML = text;
+    };
+  }
+
+  /* ---------- 1. 静态资源 ---------- */
+  var setStatic = addTest('static', '静态资源（css / js / manifest / 图标）');
+  var assets = ['css/style.css', 'js/app.js', 'manifest.webmanifest', 'assets/icons/icon-192.png'];
+  var bad = [];
+  Promise.all(assets.map(function (u) {
+    return fetch(u, { method: 'HEAD' })
+      .then(function (r) { if (!r.ok) bad.push(u + ' (' + r.status + ')'); })
+      .catch(function () { bad.push(u + ' (无法访问)'); });
+  })).then(function () {
+    if (bad.length === 0) setStatic('ok', '全部可访问。');
+    else setStatic('bad', '缺失：<code>' + bad.join('</code>、<code>') + '</code><br>多半是上传时把项目文件夹套了一层，导致 index.html 不在仓库根目录。');
+  });
+
+  /* ---------- 2. 云后端 CORS ---------- */
+  var setCors = addTest('cors', '云后端跨域（CORS）—— 决定能否登录');
+  var probe = ENDPOINT + '/.cloud/health';
+
+  function testCors() {
+    if (!ENDPOINT) { setCors('bad', '未读取到 <code>js/cloud-config.js</code> 的 endpoint。'); return; }
+    var corsOk = false;
+    fetch(probe, { method: 'GET', cache: 'no-store' })
+      .then(function () { corsOk = true; })
+      .catch(function () { corsOk = false; })
+      .then(function () {
+        if (corsOk) {
+          setCors('ok', '后端已放行 <code>' + esc(ORIGIN) + '</code> 的跨域请求。登录应可正常使用。');
+          return;
+        }
+        // CORS 失败时，用 no-cors 再探一次，区分「网络不通」和「被 CORS 拦」
+        return fetch(probe, { method: 'GET', mode: 'no-cors', cache: 'no-store' })
+          .then(function () {
+            setCors('bad',
+              '请求能到达后端，但被浏览器 CORS 拦截。<br>' +
+              '原因：后端只允许白名单来源，没有放行 <code>' + esc(ORIGIN) + '</code>。<br>' +
+              '<b>这不是前端能修的</b>，需要把该域名加入后端来源白名单，或改用它已放行的域名。');
+          })
+          .catch(function () {
+            setCors('warn',
+              '请求既拿不到响应也拿不到 opaque 响应，可能是网络不可达，或后端拒绝了该来源。<br>' +
+              '请确认 <code>' + esc(ENDPOINT) + '</code> 可以访问。');
+          });
+      });
+  }
+  testCors();
+
+  /* ---------- 3. 腾讯地图 SDK ---------- */
+  var setMap = addTest('map', '腾讯地图 SDK 加载（决定地图能否显示）');
+  var key = (window.APP_MAP_KEY || '').trim();
+  if (!key) {
+    setMap('bad', '未配置 <code>APP_MAP_KEY</code>。');
+  } else {
+    var cbName = '__diagMap' + Date.now();
+    var done = false;
+    var timer = setTimeout(function () {
+      if (done) return; done = true;
+      setMap('warn', 'SDK 加载超时（15s）。可能是网络问题，或 Key 的域名白名单未包含 <code>' + esc(HOST) + '</code>。<br>控制台里若出现「来源域名未被授权」，就是白名单问题。');
+    }, 15000);
+    window[cbName] = function () {
+      if (done) return; done = true;
+      clearTimeout(timer);
+      if (window.TMap) setMap('ok', 'SDK 已就绪，TMap 可用。');
+      else setMap('warn', 'SDK 回调触发但 TMap 未挂载。');
+    };
+    var s = document.createElement('script');
+    s.src = 'https://map.qq.com/api/gljs?v=1.exp&key=' + encodeURIComponent(key) + '&callback=' + cbName;
+    s.onerror = function () {
+      if (done) return; done = true;
+      clearTimeout(timer);
+      setMap('bad', 'SDK 脚本加载失败。检查网络，或 Key 是否被停用。');
+    };
+    document.head.appendChild(s);
+  }
+
+  /* ---------- 汇总建议 ---------- */
+  setTimeout(function () {
+    var adv = document.getElementById('advice');
+    adv.innerHTML =
+      '<b>怎么读这张表</b><br>' +
+      '· 三项全 ✓ → 可以直接注册登录使用。<br>' +
+      '· 「跨域 CORS」为 ✗ → <b>换域名也没用</b>，必须先让云后端放行 <code>' + esc(ORIGIN) + '</code>；' +
+      '否则只能继续用 WorkBuddy 自带域名（路线 A）。<br>' +
+      '· 「腾讯地图 SDK」为 ! 或 ✗ → 打开浏览器控制台，若提示「来源域名未被授权」，' +
+      '去 <a href="https://lbs.qq.com/console/key.html" target="_blank" rel="noopener">腾讯位置服务控制台</a> ' +
+      '把 <code>' + esc(HOST) + '</code> 加入 Key 的域名白名单（约 5 分钟生效）。<br>' +
+      '· 「静态资源」为 ✗ → 把 <code>index.html</code> 放到仓库**根目录**，而不是 <code>love-travel-map/</code> 子目录里。';
+  }, 16000);
+})();
+</script>
+</body>
+</html>

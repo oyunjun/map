@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我们的地图 · 一起走过的每一站</title>
+<meta name="description" content="「我们的地图」是一份情侣旅行回忆地图：在地图上标记一起走过的每个地方，记录照片、心情与故事，生成明信片与邮戳护照。">
+<meta name="keywords" content="情侣,旅行,回忆,地图,爱情,纪念,明信片,邮戳">
+<meta name="theme-color" content="#FF9DC0">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="我们的地图">
+<meta property="og:title" content="我们的地图 · 一起走过的每一站">
+<meta property="og:description" content="把一起走过的每个地方，都标记在这张地图上。">
+<meta property="og:locale" content="zh_CN">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="我们的地图 · 一起走过的每一站">
+<meta name="twitter:description" content="把一起走过的每个地方，都标记在这张地图上。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23FF5C93'/%3E%3Cpath d='M16 25C9.5 20 5 16.4 5 12 5 8.7 7.6 6 10.8 6c2 0 3.9 1.1 5.2 2.9C17.3 7.1 19.2 6 21.2 6 24.4 6 27 8.7 27 12c0 4.4-4.5 8-11 13z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="css/style.css?v=9">
+</head>
+<body>
+
+<!-- 顶栏 -->
+<header class="topbar">
+  <div class="brand">
+    <button id="sidebarToggle" class="icon-btn" title="菜单" aria-label="打开菜单">☰</button>
+    <div class="brand-text">
+      <h1>我们的地图</h1>
+      <p class="subtitle">our map · things that happened</p>
+    </div>
+  </div>
+  <div class="stats" id="stats"></div>
+  <div id="annivBar" class="anniv-bar hidden"></div>
+  <div id="presenceBar" class="presence-bar hidden"></div>
+  <div class="actions">
+    <button id="notifBtn" class="icon-btn notif-btn hidden" title="邀请通知" aria-label="邀请通知">🔔<span id="notifBadge" class="notif-badge hidden">0</span></button>
+    <button id="userChip" class="user-chip hidden" title="个人资料" aria-label="个人资料">
+      <img id="userAvatar" class="user-avatar hidden" alt="">
+      <span id="userAvatarFb" class="user-avatar fb hidden"></span>
+      <span id="userName"></span>
+    </button>
+    <label class="edit-toggle" title="开启后可编辑、删除已有回忆">
+      <input type="checkbox" id="editToggle">
+      <span class="track"><span class="knob"></span></span>
+      <span class="et-label">编辑</span>
+    </label>
+    <button id="btnAdd" class="btn primary hidden">＋ 添加回忆</button>
+  </div>
+</header>
+
+<!-- 邀请通知面板 -->
+<div id="notifPanel" class="notif-panel hidden"></div>
+
+<!-- 侧边菜单抽屉 -->
+<div id="menuBackdrop" class="menu-backdrop hidden"></div>
+<nav id="appMenu" class="app-menu" aria-hidden="true">
+  <div class="menu-head">
+    <div class="menu-logo">❤</div>
+    <div class="menu-head-tx">
+      <div class="menu-title">菜单</div>
+      <div class="menu-sub">OUR MAP · MENU</div>
+    </div>
+    <button class="menu-close" id="menuClose" title="关闭">✕</button>
+  </div>
+  <div class="menu-list" id="menuList">
+    <div class="menu-albums">
+      <div class="menu-sec-label">我的相册</div>
+      <div id="menuAlbums"></div>
+      <button class="menu-item" data-act="new-album"><span class="mi-ico">＋</span><span class="mi-tx">新建相册</span></button>
+      <button class="menu-item" data-act="manage-album"><span class="mi-ico">⚙️</span><span class="mi-tx">管理当前相册</span></button>
+    </div>
+    <div class="menu-sep"></div>
+    <button class="menu-item mi-auth" data-act="profile"><span class="mi-ico">👤</span><span class="mi-tx">个人资料</span></button>
+    <button class="menu-item mi-auth mi-data" data-act="badges"><span class="mi-ico">🏅</span><span class="mi-tx">我的成就</span></button>
+    <button class="menu-item mi-auth mi-data" data-act="passport"><span class="mi-ico">🛂</span><span class="mi-tx">旅行护照</span></button>
+    <button class="menu-item mi-auth mi-data" data-act="postcards"><span class="mi-ico">✉️</span><span class="mi-tx">我的明信片</span></button>
+    <button class="menu-item mi-auth mi-data" data-act="year"><span class="mi-ico">🎁</span><span class="mi-tx">年度回顾</span></button>
+    <div class="menu-sep"></div>
+    <button class="menu-item" data-act="list"><span class="mi-ico">📍</span><span class="mi-tx">地名列表</span></button>
+    <button class="menu-item mi-data" data-act="timeline"><span class="mi-ico">🎞️</span><span class="mi-tx">时光流</span></button>
+    <button class="menu-item" data-act="share"><span class="mi-ico">📤</span><span class="mi-tx">分享地图</span></button>
+    <button class="menu-item mi-auth" data-act="export"><span class="mi-ico">📦</span><span class="mi-tx">导出数据备份</span></button>
+    <button class="menu-item" data-act="help"><span class="mi-ico">❓</span><span class="mi-tx">使用说明</span></button>
+    <div class="menu-sep"></div>
+    <button class="menu-item danger mi-auth" data-act="logout"><span class="mi-ico">🚪</span><span class="mi-tx">退出登录</span></button>
+  </div>
+  <div class="menu-foot" id="menuFoot"></div>
+</nav>
+
+<!-- 地图 -->
+<div id="map"></div>
+
+<!-- 行程连线开关 -->
+<button id="routeToggle" class="map-control route-toggle hidden" title="显示 / 隐藏行程连线" aria-label="显示或隐藏行程连线" aria-pressed="false">🧭 行程线</button>
+
+<!-- 选点提示 -->
+<div id="pickHint" class="pick-hint hidden">📍 点击地图，选择回忆发生的地方</div>
+
+<!-- 左侧：地名列表 -->
+<aside id="sidebar" class="sidebar">
+  <div class="search-box">
+    <input id="search" type="text" placeholder="搜索地名、城市或回忆…">
+  </div>
+  <div class="filter-bar">
+    <div class="filter-row" id="moodFilter">
+      <span class="filter-label">mood · 心情</span>
+    </div>
+    <div class="filter-row" id="weatherFilter">
+      <span class="filter-label">weather · 天气</span>
+    </div>
+  </div>
+  <div id="placeList" class="place-list"></div>
+</aside>
+
+<!-- 右侧：详情 / 编辑 面板 -->
+<section id="panel" class="panel hidden">
+  <!-- 详情视图 -->
+  <div id="detailView" class="panel-view">
+    <button class="panel-close" id="detailClose" title="关闭">✕</button>
+    <div class="detail-head">
+      <h2 id="dName"></h2>
+      <div class="detail-meta" id="dMeta"></div>
+      <div class="detail-chips" id="dChips"></div>
+    </div>
+    <div class="photo-grid" id="dPhotos"></div>
+    <div class="sticky-wall" id="dStickies"></div>
+    <div class="memory-text" id="dMemory"></div>
+    <div class="detail-actions">
+      <button class="btn pink" id="btnPostcard">✉️ 生成明信片</button>
+      <button class="btn edit-only" id="btnEdit">✎ 编辑</button>
+      <button class="btn danger edit-only" id="btnDelete">删除</button>
+    </div>
+  </div>
+
+  <!-- 表单视图 -->
+  <div id="formView" class="panel-view hidden">
+    <button class="panel-close" id="formClose" title="关闭">✕</button>
+    <h2 id="formTitle">添加回忆</h2>
+    <p class="form-tip">💡 先在地图上<b>点击</b>你们去过的地方，再补充细节；也可直接<b>搜索地点</b>自动定位</p>
+
+    <div class="field">
+      <label>🔍 搜索地点（输入后按回车或点「定位」）</label>
+      <div class="search-place">
+        <input id="fSearch" placeholder="输入地点或地址，如：西湖 / 北京市朝阳区" autocomplete="off">
+        <button type="button" class="btn small" id="fSearchBtn">定位</button>
+      </div>
+      <div id="fSuggest" class="suggest hidden"></div>
+    </div>
+
+    <div class="field">
+      <label>回忆地点 <em>*</em></label>
+      <input id="fName" placeholder="例如：西湖·断桥" maxlength="60">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>省份</label><input id="fProvince" placeholder="浙江省"></div>
+      <div class="field"><label>城市</label><input id="fCity" placeholder="杭州市"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>区县 / 详细位置</label><input id="fDistrict" placeholder="西湖区"></div>
+      <div class="field"><label>日期</label><input id="fDate" type="date"></div>
+    </div>
+    <div class="field">
+      <label>📍 详细地址 <span class="muted">(在地图上点击后自动填充)</span></label>
+      <input id="fDetail" placeholder="街道、门牌号或更具体的地标…">
+    </div>
+
+    <div class="field">
+      <label>那天的心情</label>
+      <div class="pick-row" id="moodPicker"></div>
+    </div>
+    <div class="field">
+      <label>那天的天气</label>
+      <div class="pick-row" id="weatherPicker"></div>
+    </div>
+
+    <div class="field">
+      <label>回忆录</label>
+      <textarea id="fMemory" rows="5" placeholder="那天发生了什么让你心动的事，都写下来…"></textarea>
+    </div>
+
+    <div class="field">
+      <label>地图标记</label>
+      <div class="marker-picker" id="markerPicker">
+        <button type="button" class="mk-opt active" data-mk="default">
+          <span class="mk-demo">❤</span><span>爱心</span>
+        </button>
+        <button type="button" class="mk-opt" data-mk="draw">
+          <span class="mk-demo">🎨</span><span>手绘</span>
+        </button>
+        <button type="button" class="mk-opt" data-mk="photo">
+          <span class="mk-demo">📷</span><span>照片</span>
+        </button>
+      </div>
+      <div id="markerPreview" class="marker-preview hidden">
+        <img id="markerPreviewImg" alt="标记预览">
+        <button type="button" class="btn small" id="markerRedraw">🎨 重新绘制</button>
+      </div>
+      <div id="markerPhotoList" class="marker-photo-list hidden"></div>
+      <p class="minor" id="markerHint"></p>
+    </div>
+
+    <div class="field">
+      <label>照片</label>
+      <div id="dropZone" class="drop-zone">
+        <div class="dz-icon">📷</div>
+        <div>点击选择照片，或把照片拖到这里</div>
+        <div class="minor">支持 JPG / PNG / WebP，会自动压缩保存</div>
+      </div>
+      <input id="fileInput" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple hidden>
+      <div id="photoList" class="photo-edit-list"></div>
+    </div>
+
+    <div class="field">
+      <label>手写便签 <em>最多 3 张，像贴在手账上</em></label>
+      <div class="sticky-wall" id="formStickies" style="margin:0 0 8px"></div>
+      <button type="button" class="btn small" id="btnAddSticky">✍️ 写一张手写便签</button>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" id="formCancel">取消</button>
+      <button class="btn primary" id="formSave">保存回忆</button>
+    </div>
+  </div>
+</section>
+
+<!-- 空状态 -->
+<div id="emptyState" class="empty-state hidden">
+  <div class="empty-card">
+    <div class="empty-heart">❤</div>
+    <h3>地图还是空的</h3>
+    <p id="emptyHint">当前为浏览模式：打开右上角「编辑」，即可添加新的回忆</p>
+    <button class="btn primary hidden" id="emptyAdd">＋ 添加第一段回忆</button>
+  </div>
+</div>
+
+<!-- 底部胶片时间轴 -->
+<div id="filmstrip" class="filmstrip hidden">
+  <div class="film-head">
+    <button class="film-toggle" id="filmToggle" title="收起 / 展开">▾</button>
+    <span class="mono">film · 时光胶片</span>
+    <span class="film-counter" id="filmCounter">00 FRAMES</span>
+  </div>
+  <div class="film-track" id="filmTrack"></div>
+</div>
+
+<!-- 本地数据迁移提示 -->
+<div id="migrateBar" class="migrate-bar hidden">
+  <span>📦 检测到 <b id="migCount"></b> 条本地版回忆，要导入到你的云端账号吗？</span>
+  <button id="migImport" class="btn primary small">导入</button>
+  <button id="migLater" class="btn small">暂不</button>
+</div>
+
+<!-- 地图加载失败提示 -->
+<div id="mapError" class="map-error hidden">
+  <span>🗺️ 地图组件加载失败：请检查网络后刷新，或确认腾讯位置服务 Key 可用（个人开发者免费额度）。</span>
+  <button id="mapErrorClose">✕</button>
+</div>
+
+<!-- 登录 / 注册 -->
+<div id="authOverlay" class="auth-overlay hidden">
+  <div class="auth-card">
+    <div class="auth-logo">❤</div>
+    <h2>我们的地图</h2>
+    <p class="auth-sub">things happened, places remembered</p>
+
+    <div class="auth-tabs">
+      <button id="tabPwd" class="auth-tab active" type="button">密码登录</button>
+      <button id="tabSms" class="auth-tab" type="button">验证码登录 / 注册</button>
+    </div>
+
+    <!-- 密码登录 -->
+    <div id="pwdView">
+      <div class="field">
+        <label>手机号</label>
+        <input id="pPhone" type="tel" maxlength="11" placeholder="请输入 11 位手机号">
+      </div>
+      <div class="field">
+        <label>密码</label>
+        <input id="pPwd" type="password" placeholder="注册时设置的密码">
+      </div>
+      <button id="pwdSubmit" class="btn primary auth-btn">登录</button>
+    </div>
+
+    <!-- 验证码登录 / 注册 -->
+    <div id="smsView" class="hidden">
+      <div class="field">
+        <label>手机号</label>
+        <div class="phone-row">
+          <input id="sPhone" type="tel" maxlength="11" placeholder="请输入 11 位手机号">
+          <button id="aSendCode" class="btn code-btn" type="button">获取验证码</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>短信验证码</label>
+        <input id="sCode" type="text" inputmode="numeric" maxlength="6" placeholder="请输入验证码">
+      </div>
+      <div class="field">
+        <label>设置密码 <em>新用户必填，≥6 位</em></label>
+        <input id="sPwd" type="password" placeholder="设置后可用密码直接登录">
+      </div>
+      <button id="smsSubmit" class="btn primary auth-btn">登录 / 注册</button>
+    </div>
+
+    <label class="agree-row">
+      <input type="checkbox" id="agreePolicy">
+      <span>我已阅读并同意 <a href="terms.html" target="_blank" rel="noopener">用户协议</a> 和 <a href="privacy.html" target="_blank" rel="noopener">隐私政策</a></span>
+    </label>
+
+    <div id="authError" class="auth-error hidden"></div>
+    <p class="auth-hint">新手机号通过短信验证后自动创建账号；设置密码后即可随时用密码登录。每位用户的数据相互独立。</p>
+  </div>
+</div>
+
+<!-- 个人资料 -->
+<div id="profileModal" class="modal hidden">
+  <div class="modal-card prof-card">
+    <button class="modal-close" id="profileClose">✕</button>
+    <h3>个人资料</h3>
+
+    <div class="prof-stats" id="profStats"></div>
+
+    <div class="prof-avatar-row">
+      <div class="prof-avatar-wrap">
+        <img id="profAvatar" class="prof-avatar hidden" alt="头像">
+        <span id="profAvatarFb" class="prof-avatar fb">❤</span>
+      </div>
+      <div class="prof-avatar-side">
+        <button class="btn small" id="profAvatarBtn" type="button">上传头像</button>
+        <div class="prof-emoji-label">或选个表情当头像</div>
+        <div class="prof-emoji" id="profEmoji"></div>
+      </div>
+      <input id="avatarInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+    </div>
+
+    <div class="prof-tabs">
+      <button class="prof-tab active" type="button" data-tab="base">基本资料</button>
+      <button class="prof-tab" type="button" data-tab="sec">账户安全</button>
+    </div>
+
+    <div class="prof-pane" data-pane="base">
+      <div class="field">
+        <label>用户名</label>
+        <input id="profName" maxlength="20" placeholder="给自己起个名字（2-20 字符）">
+      </div>
+      <div class="field">
+        <label>个性签名</label>
+        <textarea id="profBio" rows="2" maxlength="60" placeholder="写一句你们的暗号，或一个故事标题…"></textarea>
+      </div>
+      <div class="field">
+        <label>在一起纪念日</label>
+        <input id="profAnniversary" type="date">
+        <div class="prof-anniv" id="profAnnivDays"></div>
+      </div>
+      <!-- 公开分享已迁移至「相册管理」 -->
+    </div>
+
+    <div class="prof-pane hidden" data-pane="sec">
+      <div class="field">
+        <label>当前密码</label>
+        <input id="profOldPwd" type="password" placeholder="修改密码时必填">
+      </div>
+      <div class="field">
+        <label>新密码</label>
+        <input id="profNewPwd" type="password" placeholder="至少 6 位，留空则不修改">
+      </div>
+      <div class="field">
+        <label>确认新密码</label>
+        <input id="profNewPwd2" type="password" placeholder="再输入一次新密码">
+      </div>
+    </div>
+
+    <div class="prof-danger">
+      <div class="pd-title">⚠️ 账户与数据</div>
+      <button id="btnWipeData" class="btn small danger" type="button">清空全部回忆</button>
+      <button id="btnDeleteAccount" class="btn small danger" type="button">注销账号</button>
+      <div class="pd-hint">「清空」只删除回忆与照片、保留账号；「注销」会删除与你相关的全部数据且不可恢复。</div>
+    </div>
+
+    <div id="profError" class="auth-error hidden"></div>
+    <button id="profSave" class="btn primary auth-btn">保存资料</button>
+  </div>
+</div>
+
+<!-- 使用说明 -->
+<div id="helpModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" id="helpClose">✕</button>
+    <h3>使用说明</h3>
+    <div class="help-body">
+      <h4>❤ 账号与数据</h4>
+      <p>支持「密码登录」和「验证码登录/注册」两种方式：新手机号通过短信验证后自动创建账号并设置密码，之后随时可用密码直接登录。每位用户的回忆和照片保存在各自的云端空间，换手机登录也不丢。</p>
+      <p>登录前需勾选同意《用户协议》和《隐私政策》。在「个人资料 → 账户与数据」里可以清空全部回忆（保留账号）或注销账号（删除全部数据），两者都需要手动输入确认词，且不可恢复。</p>
+      <h4>✏️ 浏览 / 编辑模式</h4>
+      <p>平时是浏览模式：点地图上的❤或左侧列表，静静欣赏照片和回忆录。打开右上角「编辑」后才会出现「＋ 添加回忆」，可编辑、删除已有回忆。</p>
+      <h4>🎭 心情与天气</h4>
+      <p>添加回忆时可以给这段记忆打上心情（开心、感动、爆笑…）和天气标签；左侧筛选条可以只看某一类回忆，地图上也会只显示这类回忆。</p>
+      <h4>✍️ 手写便签</h4>
+      <p>每段回忆最多可贴 3 张手写便签：用画笔写字或画画，便签会以手写纸的样子贴在该回忆里。</p>
+      <h4>🛂 邮戳护照</h4>
+      <p>每段回忆都会自动生成一枚邮戳（城市 + 日期）。点顶栏「🛂」打开护照本，收集你们所有的印章，点印章可跳到对应回忆。</p>
+      <h4>🏅 成就徽章</h4>
+      <p>点顶栏「🏅」查看成就：记录第一段回忆、走过 5 个城市、上传 10 张照片… 解锁时会撒彩带。</p>
+      <h4>✉️ 明信片</h4>
+      <p>在回忆详情里点「生成明信片」，把这段回忆变成一张贴纸风明信片图片，可下载保存或发给 TA。</p>
+      <h4>🎬 时光胶片</h4>
+      <p>页面底部是按时间排列的胶片带，拖动或点击缩略图即可在地图上定位那段回忆。</p>
+      <h4>🎞️ 时光流</h4>
+      <p>菜单里的「时光流」把你们的回忆按时间倒序排成图文故事流，像刷朋友圈一样往下翻，点任意一条可打开详情。</p>
+      <h4>🧭 行程线</h4>
+      <p>地图右上角的「🧭 行程线」开关，会把同一次旅程里的回忆按日期连成一条轨迹，直观看到你们一起走过的路线。</p>
+      <h4>🎨 个性化地图标记</h4>
+      <p>编辑回忆时可以选择「地图标记」：爱心（会随心情变色）、手绘一个独一无二的标记，或直接选一张照片作为标记。</p>
+      <h4>🗺️ 分享我的地图</h4>
+      <p>在「菜单 → 管理当前相册」里打开「公开分享」，把生成的专属链接发给朋友，TA 登录后就能只读浏览；你随时可以关闭公开。</p>
+      <h4>📦 数据备份</h4>
+      <p>菜单里的「导出数据备份」会把所有相册与回忆的元数据下载成一份 JSON 文件，方便你自己留档（照片仍保存在云端）。</p>
+      <h4>🎁 年度回顾</h4>
+      <p>菜单里的「年度回顾」会把某一年的回忆汇总成一张卡片：几段回忆、几座城市、多少照片、连点里程和最常出现的心情，还能一键复制文案分享。用 ‹ › 切换年份。</p>
+      <h4>📎 iPhone 照片提示</h4>
+      <p>iPhone 相册默认的 HEIC 格式浏览器无法处理，请在「设置-相机-格式」选「兼容性最佳」后再上传。</p>
+    </div>
+  </div>
+</div>
+
+<!-- 访客浏览横幅 -->
+<div id="visitorBar" class="visitor-bar hidden">
+  <span>👀 正在浏览 <b id="visitorName"></b> 的地图（只读）</span>
+  <button id="visitorExit" class="btn small">回到我的</button>
+</div>
+
+<!-- 分享 -->
+<div id="shareModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" id="shareClose">✕</button>
+    <h3>分享给 TA 👥</h3>
+    <div class="url-row">
+      <span class="url-label">网站</span>
+      <code id="shareUrl"></code>
+      <button class="btn copy-btn" id="shareCopy">复制</button>
+    </div>
+    <div class="url-row">
+      <span class="url-label">我的</span>
+      <code id="shareMyUrl"></code>
+      <button class="btn copy-btn" id="shareMyCopy">复制</button>
+    </div>
+    <p class="share-tip">💡 <b>网站地址</b>：发给 TA 注册登录，就能记录各自的回忆。<br>
+    <b>我的地图</b>：只读分享你的旅行地图，需先在「个人资料」中开启「公开我的旅行地图」。</p>
+  </div>
+</div>
+
+<!-- 相册管理 -->
+<div id="albumModal" class="modal hidden">
+  <div class="modal-card album-card">
+    <button class="modal-close" id="albumClose">✕</button>
+    <h3>相册管理 <span id="albumBadge" class="album-badge"></span></h3>
+    <div class="field">
+      <label>相册名称</label>
+      <input id="albumName" maxlength="20" placeholder="给这张地图起个名字">
+    </div>
+    <div class="field">
+      <label>类型 <span class="muted">(点一下就能切换)</span></label>
+      <div id="albumKind" class="album-kind"></div>
+    </div>
+    <div class="field">
+      <label>相册封面</label>
+      <div class="cover-row">
+        <div id="albumCover" class="album-cover">🖼️</div>
+        <div class="cover-actions">
+          <button type="button" class="btn small" id="coverPickBtn">从回忆选</button>
+          <button type="button" class="btn small" id="coverUpBtn">上传图片</button>
+          <button type="button" class="btn small danger hidden" id="coverClearBtn">移除封面</button>
+        </div>
+        <input id="coverInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+      </div>
+    </div>
+    <div class="field">
+      <label class="switch-row">
+        <span class="sw"><input type="checkbox" id="albumPublic"><span class="sw-track"></span><span class="sw-knob"></span></span>
+        <span>公开分享（生成只读链接，任何人登录后可见）</span>
+      </label>
+      <div id="albumShareRow" class="url-row hidden" style="margin-top:9px">
+        <span class="url-label">链接</span>
+        <code id="albumShareUrl"></code>
+        <button class="btn copy-btn" id="albumShareCopy" type="button">复制</button>
+      </div>
+    </div>
+    <div class="menu-sep"></div>
+    <div class="field">
+      <label>协作成员 <span id="albumMemberHint" class="muted"></span></label>
+      <div id="albumMembers" class="member-list"></div>
+      <div id="albumInviteRow" class="invite-row">
+        <input id="invitePhone" type="tel" inputmode="numeric" placeholder="对方注册手机号" maxlength="20">
+        <select id="inviteRole">
+          <option value="editor">可编辑</option>
+          <option value="viewer">仅查看</option>
+        </select>
+        <button class="btn small" id="inviteBtn" type="button">邀请</button>
+      </div>
+    </div>
+    <div class="menu-sep"></div>
+    <div class="album-danger">
+      <button id="albumDelete" class="btn danger" type="button">删除相册</button>
+      <button id="albumLeave" class="btn small hidden" type="button">退出相册</button>
+    </div>
+  </div>
+</div>
+
+<!-- 封面选择 -->
+<div id="coverPickerModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" id="coverPickerClose">✕</button>
+    <h3>选择相册封面</h3>
+    <p class="minor">从本相册已有的照片里挑一张，或使用「上传图片」</p>
+    <div id="coverGrid" class="cover-grid"></div>
+  </div>
+</div>
+
+<!-- 手绘标记画板 -->
+<div id="drawModal" class="modal hidden">
+  <div class="modal-card draw-card">
+    <button class="modal-close" id="drawClose">✕</button>
+    <h3>画一个标记 🎨</h3>
+    <p class="draw-tip">用画笔自由创作，画在中间区域效果最佳；保存后会成为这段回忆的地图标记</p>
+    <div class="draw-canvas-wrap">
+      <canvas id="drawCanvas" width="256" height="320"></canvas>
+    </div>
+    <div class="draw-tools">
+      <div class="palette" id="drawPalette"></div>
+      <div class="brush-row">
+        <span class="brush-label">画笔</span>
+        <input type="range" id="brushSize" min="2" max="26" value="8">
+        <span id="brushDot"></span>
+        <button type="button" class="btn tiny" id="drawEraser" title="橡皮擦">🧽 橡皮</button>
+        <button type="button" class="btn tiny" id="drawUndo">↩ 撤销</button>
+        <button type="button" class="btn tiny" id="drawClear">清空</button>
+      </div>
+      <div class="draw-actions">
+        <button type="button" class="btn primary" id="drawSave">使用这个标记</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 手写便签画板 -->
+<div id="stickyModal" class="modal hidden">
+  <div class="modal-card draw-card">
+    <button class="modal-close" id="stickyClose">✕</button>
+    <h3>写一张手写便签 ✍️</h3>
+    <p class="draw-tip">写下当天想记住的一句话，或随手涂两笔；保存后会贴在这段回忆里</p>
+    <div class="draw-canvas-wrap" style="background:#FFF6E9">
+      <canvas id="stickyCanvas" width="480" height="360"></canvas>
+    </div>
+    <div class="draw-tools">
+      <div class="palette" id="stickyPalette"></div>
+      <div class="brush-row">
+        <span class="brush-label">笔</span>
+        <input type="range" id="stickyBrush" min="2" max="18" value="5">
+        <span id="stickyBrushDot"></span>
+        <button type="button" class="btn tiny" id="stickyEraser">🧽 橡皮</button>
+        <button type="button" class="btn tiny" id="stickyUndo">↩ 撤销</button>
+        <button type="button" class="btn tiny" id="stickyClear">清空</button>
+      </div>
+      <div class="draw-actions">
+        <button type="button" class="btn primary" id="stickySave">贴到回忆上</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 邮戳护照 -->
+<div id="passportModal" class="modal hidden">
+  <div class="modal-card passport-card">
+    <button class="modal-close" id="passportClose" style="z-index:5">✕</button>
+    <div class="passport-cover">
+      <div class="pp-emblem">❤</div>
+      <div>
+        <h3>我们的邮戳护照</h3>
+        <div class="pp-sub">STAMP PASSPORT · PEOPLE'S REPUBLIC OF US</div>
+      </div>
+    </div>
+    <div class="passport-body">
+      <div class="pp-meta-row" id="passportMeta"></div>
+      <div class="stamp-grid" id="stampGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 成就徽章 -->
+<div id="badgesModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" id="badgesClose">✕</button>
+    <h3>成就徽章 🏅</h3>
+    <p class="ach-summary" id="achSummary"></p>
+    <div class="ach-grid" id="achGrid"></div>
+  </div>
+</div>
+
+<!-- 明信片 -->
+<div id="postcardModal" class="modal hidden">
+  <div class="modal-card postcard-card">
+    <button class="modal-close" id="postcardClose">✕</button>
+    <h3>明信片 ✉️</h3>
+    <canvas id="postcardCanvas" width="900" height="1200"></canvas>
+    <div class="postcard-actions">
+      <button class="btn primary" id="postcardDownload">下载图片</button>
+      <button class="btn" id="postcardShare">复制文案</button>
+    </div>
+    <p class="pc-hint" id="postcardHint">贴纸风明信片 · 900×1200</p>
+  </div>
+</div>
+
+<!-- 我的明信片画廊 -->
+<div id="postcardsModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-close" id="postcardsClose">✕</button>
+    <h3>我的明信片 ✉️</h3>
+    <p class="ach-summary">点一段回忆，立刻生成属于它的贴纸风明信片</p>
+    <div class="pc-grid" id="pcGrid"></div>
+  </div>
+</div>
+
+<!-- 灯箱 -->
+<div id="lightbox" class="lightbox hidden">
+  <button class="lb-btn lb-close" id="lbClose">✕</button>
+  <button class="lb-btn lb-prev" id="lbPrev">‹</button>
+  <img id="lbImg" alt="">
+  <div class="lb-caption" id="lbCaption"></div>
+  <div class="lb-counter" id="lbCounter"></div>
+  <button class="lb-btn lb-next" id="lbNext">›</button>
+</div>
+
+<!-- 那年今日 -->
+<div id="otdModal" class="modal hidden">
+  <div class="modal-card otd-card">
+    <button class="modal-close" id="otdClose" aria-label="关闭">✕</button>
+    <div class="otd-kicker">ON THIS DAY · 那年今日</div>
+    <div class="otd-body" id="otdBody"></div>
+    <div class="otd-actions">
+      <button class="btn" id="otdLater">下次再说</button>
+      <button class="btn primary" id="otdView">去看看 💕</button>
+    </div>
+  </div>
+</div>
+
+<!-- 时光流（图文时间线） -->
+<div id="timelineView" class="timeline-view hidden">
+  <header class="tl-head">
+    <div class="tl-title">
+      <div class="tl-title-main">时光流</div>
+      <div class="tl-title-sub">STORY FEED · 我们的故事</div>
+    </div>
+    <button class="tl-close" id="timelineClose" title="关闭" aria-label="关闭时光流">✕</button>
+  </header>
+  <div class="tl-body" id="timelineBody"></div>
+</div>
+
+<!-- 年度回顾 -->
+<div id="yearModal" class="modal hidden">
+  <div class="modal-card year-card">
+    <button class="modal-close" id="yearClose" aria-label="关闭">✕</button>
+    <div class="year-head">
+      <button class="year-nav" id="yearPrev" aria-label="上一年">‹</button>
+      <div class="year-title">
+        <div class="year-num" id="yearNum">—</div>
+        <div class="year-sub">YEAR IN REVIEW · 我们的这一年</div>
+      </div>
+      <button class="year-nav" id="yearNext" aria-label="下一年">›</button>
+    </div>
+    <div class="year-grid" id="yearGrid"></div>
+    <div class="year-cities" id="yearCities"></div>
+    <div class="year-empty hidden" id="yearEmpty">这一年还没有回忆</div>
+    <div class="year-actions">
+      <button class="btn primary" id="yearCopy">复制这一年 📋</button>
+    </div>
+  </div>
+</div>
+
+<!-- 危险操作二次确认 -->
+<div id="dangerModal" class="modal hidden">
+  <div class="modal-card danger-card">
+    <button class="modal-close" id="dangerClose" aria-label="关闭">✕</button>
+    <h3 id="dangerTitle">确认操作</h3>
+    <p id="dangerDesc" class="danger-desc"></p>
+    <div class="field">
+      <label>请输入「<b id="dangerWord">确认</b>」以继续</label>
+      <input id="dangerInput" autocomplete="off" placeholder="在此输入">
+    </div>
+    <div id="dangerError" class="auth-error hidden"></div>
+    <div class="danger-actions">
+      <button class="btn" id="dangerCancel" type="button">取消</button>
+      <button class="btn danger" id="dangerOk" type="button">确认执行</button>
+    </div>
+  </div>
+</div>
+
+<!-- 提示 -->
+<div id="toast" class="toast"></div>
+<canvas id="confettiCanvas"></canvas>
+
+<script src="js/cloud-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<script src="js/config.js?v=9"></script>
+<script>
+/* 腾讯位置服务 JS API GL 加载器（libraries=service 提供逆 / 正向地理编码）。
+ * SDK 一律带 Key 加载；但 WebService 请求会校验「来源域名白名单」：
+ *  - 线上域名已在白名单里，直连即可。
+ *  - 本地预览 / WorkBuddy 内预览的来源是 127.0.0.1，直连必被 110 拒绝，
+ *    因此把 service 请求改走 WorkBuddy 运行时代理，绕过白名单。
+ * 注意：__WB_HTTP_PORT__ / __WB_TMAP_SECRET__ 为运行时占位符，请原样保留。 */
+(function () {
+  var key = (window.APP_MAP_KEY || '').trim();
+  var url = 'https://map.qq.com/api/gljs?v=1.exp&libraries=service';
+  if (key) url += '&key=' + encodeURIComponent(key);
+  var proxy = 'http://127.0.0.1:__WB_HTTP_PORT__/_TMapService/_wbt/__WB_TMAP_SECRET__';
+  // 仅在占位符已被运行时替换成真实端口/密钥时才启用代理；
+  // 否则（普通本地静态服务）不设置，避免把请求发到无效地址。
+  if (/^(127\.0\.0\.1|localhost)$/.test(location.hostname) && proxy.indexOf('__WB_') === -1) {
+    window._TMapSecurityConfig = { serviceHost: proxy };
+  }
+  var done = false;
+  window._mapReady = new Promise(function (resolve, reject) {
+    var s = document.createElement('script');
+    s.src = url;
+    s.onload = function () { done = true; resolve(); };
+    s.onerror = function () { reject(new Error('SDK 加载失败')); };
+    document.head.appendChild(s);
+    setTimeout(function () { if (!done) reject(new Error('SDK 加载超时')); }, 20000);
+  });
+})();
+</script>
+<script src="js/app.js?v=9"></script>
+</body>
+</html>
